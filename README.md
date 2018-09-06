@@ -9,7 +9,7 @@ This is a work in progress, as of right now the code is functional but pretty sl
 
 ## Installation Notes
 ---
-    git clone git@github.com:alantrrs/OpenTLD.git
+    git clone git@github.com:yushk/OpenTLD.git
     cd OpenTLD
     mkdir build
     cd build
@@ -26,7 +26,9 @@ This is a work in progress, as of right now the code is functional but pretty sl
     ./run_tld -p ../parameters.yml -s ../datasets/06_car/car.mpg -b ../datasets/06_car/init.txt 
 ### To test the final detector (Repeat the video, first time learns, second time detects)
     ./run_tld -p ../parameters.yml -s ../datasets/06_car/car.mpg -b ../datasets/06_car/init.txt -tl -r
-
+### head test
+    ./run_tld -p ../parameters.yml -s ../datasets/11_hand/hand.png 
+    
 ---
 Evaluation
 ---
@@ -38,3 +40,8 @@ Thanks
 ---
 To Zdenek Kalal for realeasing his awesome algorithm
 
+Reference
+---
+https://blog.csdn.net/taily_duan/article/details/52130135
+http://www.elecfans.com/consume/483057.html 手势
+https://blog.csdn.net/qq5132834/article/details/42682947?locationNum=2 轮廓识别

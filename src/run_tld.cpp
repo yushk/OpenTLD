@@ -1,5 +1,5 @@
 #include <opencv2/opencv.hpp>
-#include <opencv2/highgui/highgui.hpp>//Ìí¼Ó´Ë¾ä²»³ö´íËµÃ÷°²×°ÅäÖÃ³É¹¦
+#include <opencv2/highgui/highgui.hpp>//ï¿½ï¿½Ó´Ë¾ä²»ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½ï¿½ï¿½×°ï¿½ï¿½ï¿½Ã³É¹ï¿½
 #include <tld_utils.h>
 #include <iostream>
 #include <sstream>
@@ -122,6 +122,7 @@ int main(int argc, char * argv[]){
   //Read parameters file
   tld.read(fs.getFirstTopLevelNode());
   Mat frame;
+  Mat frameHSV;	// hsvç©ºé—´
   Mat last_gray;
   Mat first;
   if (fromfile){
@@ -132,104 +133,133 @@ int main(int argc, char * argv[]){
       capture.set(CV_CAP_PROP_FRAME_WIDTH,340);
       capture.set(CV_CAP_PROP_FRAME_HEIGHT,240);
   }
+  
+  Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2å€¼æ©è†œ
+	Mat dst(frame);	// è¾“å‡ºå›¾åƒ
+  medianBlur(frame, frame, 5); //ä¸­å€¼æ»¤æ³¢
+  
+  cvtColor( frame, frameHSV, CV_BGR2HSV ); //è½¬æ¢å›¾åƒçš„é¢œè‰²ç©ºé—´
+  Mat dstTemp1(frame.rows, frame.cols, CV_8UC1);
+  Mat dstTemp2(frame.rows, frame.cols, CV_8UC1);
+  // å¯¹HSVç©ºé—´è¿›è¡Œé‡åŒ–ï¼Œå¾—åˆ°2å€¼å›¾åƒï¼Œäº®çš„éƒ¨åˆ†ä¸ºæ‰‹çš„å½¢çŠ¶
+  inRange(frameHSV, Scalar(0,30,30), Scalar(40,170,256), dstTemp1);
+  inRange(frameHSV, Scalar(156,30,30), Scalar(180,170,256), dstTemp2);
+  bitwise_or(dstTemp1, dstTemp2, mask);
+  imshow("frame", frameHSV);
+  imshow("mask", mask);
+    
+  // å½¢æ€å­¦æ“ä½œï¼Œå»é™¤å™ªå£°ï¼Œå¹¶ä½¿æ‰‹çš„è¾¹ç•Œæ›´åŠ æ¸…æ™°
+  Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
+  imshow("element", element);
+  
+  erode(mask, mask, element);//ä¾µèš€
+  morphologyEx(mask, mask, MORPH_OPEN, element);
+  dilate(mask, mask, element);//è†¨èƒ€
+  morphologyEx(mask, mask, MORPH_CLOSE, element);
 
+  frame.copyTo(dst, mask);
+  imshow("dst", dst);
+  mask.release();
+  dst.release();
+  // contours.clear();
+  // hierarchy.clear();
+  // filterContours.clear();
 
-    int frame_width = (int)capture.get(CV_CAP_PROP_FRAME_WIDTH);
-    int frame_height = (int)capture.get(CV_CAP_PROP_FRAME_HEIGHT);
-    int frame_number = capture.get(CV_CAP_PROP_FRAME_COUNT);
-    cout << "frame_width is " << frame_width << endl;
-    cout << "frame_height is " << frame_height << endl;
-    cout << "frame_number is " << frame_number << endl;
-    srand((unsigned)time(NULL)); //Ê±¼äµã
-    long frameToStart = rand() % frame_number;//È¡  ×î´óÖ¡ÊıÖ®ÄÚµÄ Ëæ»úÊı
-    cout <<"Ö¡¿ªÊ¼µÄµØ·½"<< frameToStart << endl;
+  // int frame_width = (int)capture.get(CV_CAP_PROP_FRAME_WIDTH);
+  // int frame_height = (int)capture.get(CV_CAP_PROP_FRAME_HEIGHT);
+  // int frame_number = capture.get(CV_CAP_PROP_FRAME_COUNT);
+  // cout << "frame_width is " << frame_width << endl;
+  // cout << "frame_height is " << frame_height << endl;
+  // cout << "frame_number is " << frame_number << endl;
+  // srand((unsigned)time(NULL)); //Ê±ï¿½ï¿½ï¿½
+  // long frameToStart = rand() % frame_number;//È¡  ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½Ö®ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
+  // cout <<"Ö¡ï¿½ï¿½Ê¼ï¿½ÄµØ·ï¿½"<< frameToStart << endl;
 
-    // Mat frame; //Mat¶ÔÏó  ÆäÊµ¾ÍÊÇÍ¼Ïñ¶ÔÏó
-    char image_name[20];
-    imshow("che", frame);//ÏÔÊ¾
-    for(int i=0;i<frame_number;i++){
-      printf("iiii:%d\n",i);
-      capture.set(CV_CAP_PROP_POS_FRAMES, i);//´Ó´ËÊ±µÄÖ¡Êı¿ªÊ¼»ñÈ¡Ö¡
-      if (!capture.read(frame))
-      {
-          cout << "¶ÁÈ¡ÊÓÆµÊ§°Ü" << endl;
-      }
-      sprintf(image_name, "%s%d%s", "image/",i, ".jpg");//±£´æµÄÍ¼Æ¬Ãû
-      printf("image_name:%s\n",image_name);
-      imwrite(image_name, frame); //Ğ´Èë  Ç°ÃæÊÇ  path+name²»ÒªÍüÁËºó×º ºóÃæÊÇ Ö¡
-    }
-    waitKey(0);
+  // // Mat frame; //Matï¿½ï¿½ï¿½ï¿½  ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½
+  // char image_name[20];
+  // imshow("che", frame);//ï¿½ï¿½Ê¾
+  // for(int i=0;i<frame_number;i++){
+  //   printf("iiii:%d\n",i);
+  //   capture.set(CV_CAP_PROP_POS_FRAMES, i);//ï¿½Ó´ï¿½Ê±ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½È¡Ö¡
+  //   if (!capture.read(frame))
+  //   {
+  //       cout << "ï¿½ï¿½È¡ï¿½ï¿½ÆµÊ§ï¿½ï¿½" << endl;
+  //   }
+  //   sprintf(image_name, "%s%d%s", "image/",i, ".jpg");//ï¿½ï¿½ï¿½ï¿½ï¿½Í¼Æ¬ï¿½ï¿½
+  //   printf("image_name:%s\n",image_name);
+  //   imwrite(image_name, frame); //Ğ´ï¿½ï¿½  Ç°ï¿½ï¿½ï¿½ï¿½  path+nameï¿½ï¿½Òªï¿½ï¿½ï¿½Ëºï¿½×º ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ö¡
+  // }
+  // waitKey(0);
 
   ///Initialization
-GETBOUNDINGBOX:
-  while(!gotBB)
-  {
-    if (!fromfile){
-      capture >> frame;
-    }
-    else
+  GETBOUNDINGBOX:
+    while(!gotBB) {
+      if (!fromfile){
+        capture >> frame;
+      } else{
       first.copyTo(frame);
-    cvtColor(frame, last_gray, CV_RGB2GRAY);
-    drawBox(frame,box);
-    imshow("TLD", frame);
-    if (cvWaitKey(33) == 'q')
-	    return 0;
-  }
-  if (min(box.width,box.height)<(int)fs.getFirstTopLevelNode()["min_win"]){
-      cout << "Bounding box too small, try again." << endl;
-      gotBB = false;
-      goto GETBOUNDINGBOX;
-  }
-  //Remove callback
-  cvSetMouseCallback( "TLD", NULL, NULL );
-  printf("Initial Bounding Box = x:%d y:%d h:%d w:%d\n",box.x,box.y,box.width,box.height);
-  //Output file
-  FILE  *bb_file = fopen("bounding_boxes.txt","w");
-  //TLD initialization
-  tld.init(last_gray,box,bb_file);
-
-  ///Run-time
-  Mat current_gray;
-  BoundingBox pbox;
-  vector<Point2f> pts1;
-  vector<Point2f> pts2;
-  bool status=true;
-  int frames = 1;
-  int detections = 1;
-REPEAT:
-  while(capture.read(frame)){
-    //get frame
-    cvtColor(frame, current_gray, CV_RGB2GRAY);
-    //Process Frame
-    tld.processFrame(last_gray,current_gray,pts1,pts2,pbox,status,tl,bb_file);
-    //Draw Points
-    if (status){
-      drawPoints(frame,pts1);
-      drawPoints(frame,pts2,Scalar(0,255,0));
-      drawBox(frame,pbox);
-      detections++;
+      }
+      cvtColor(frame, last_gray, CV_RGB2GRAY);
+      drawBox(frame,box);
+      imshow("TLD", frame);
+      if (cvWaitKey(33) == 'q')
+        return 0;
     }
-    //Display
-    imshow("TLD", frame);
-    //swap points and images
-    swap(last_gray,current_gray);
-    pts1.clear();
-    pts2.clear();
-    frames++;
-    printf("Detection rate: %d/%d\n",detections,frames);
-    if (cvWaitKey(33) == 'q')
-      break;
-  }
-  if (rep){
-    rep = false;
-    tl = false;
+    if (min(box.width,box.height)<(int)fs.getFirstTopLevelNode()["min_win"]) {
+        cout << "Bounding box too small, try again." << endl;
+        gotBB = false;
+        goto GETBOUNDINGBOX;
+    }
+    //Remove callback
+    cvSetMouseCallback( "TLD", NULL, NULL );
+    printf("Initial Bounding Box = x:%d y:%d h:%d w:%d\n",box.x,box.y,box.width,box.height);
+    //Output file
+    FILE  *bb_file = fopen("bounding_boxes.txt","w");
+    //TLD initialization
+    tld.init(last_gray,box,bb_file);
+
+    ///Run-time
+    Mat current_gray;
+    BoundingBox pbox;
+    vector<Point2f> pts1;
+    vector<Point2f> pts2;
+    bool status=true;
+    int frames = 1;
+    int detections = 1;
+  REPEAT:
+    while(capture.read(frame)){
+      //get frame
+      cvtColor(frame, current_gray, CV_RGB2GRAY);
+      //Process Frame
+      tld.processFrame(last_gray,current_gray,pts1,pts2,pbox,status,tl,bb_file);
+      //Draw Points
+      if (status){
+        // drawPoints(frame,pts1);
+        // drawPoints(frame,pts2);
+        drawBox(frame,pbox);
+        detections++;
+      }
+      //Display
+      imshow("TLD", frame);
+      //swap points and images
+      swap(last_gray,current_gray);
+      pts1.clear();
+      pts2.clear();
+      frames++;
+      printf("Detection rate: %d/%d\n",detections,frames);
+      if (cvWaitKey(33) == 'q')
+        break;
+    }
+    if (rep){
+      rep = false;
+      tl = false;
+      fclose(bb_file);
+      bb_file = fopen("final_detector.txt","w");
+      //capture.set(CV_CAP_PROP_POS_AVI_RATIO,0);
+      capture.release();
+      capture.open(video);
+      goto REPEAT;
+    }
     fclose(bb_file);
-    bb_file = fopen("final_detector.txt","w");
-    //capture.set(CV_CAP_PROP_POS_AVI_RATIO,0);
-    capture.release();
-    capture.open(video);
-    goto REPEAT;
-  }
-  fclose(bb_file);
-  return 0;
+    return 0;
 }
