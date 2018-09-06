@@ -1,9 +1,11 @@
 #include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>//添加此句不出错说明安装配置成功
 #include <tld_utils.h>
 #include <iostream>
 #include <sstream>
 #include <TLD.h>
 #include <stdio.h>
+#include <time.h>
 using namespace cv;
 using namespace std;
 //Global variables
@@ -130,6 +132,33 @@ int main(int argc, char * argv[]){
       capture.set(CV_CAP_PROP_FRAME_WIDTH,340);
       capture.set(CV_CAP_PROP_FRAME_HEIGHT,240);
   }
+
+
+    int frame_width = (int)capture.get(CV_CAP_PROP_FRAME_WIDTH);
+    int frame_height = (int)capture.get(CV_CAP_PROP_FRAME_HEIGHT);
+    int frame_number = capture.get(CV_CAP_PROP_FRAME_COUNT);
+    cout << "frame_width is " << frame_width << endl;
+    cout << "frame_height is " << frame_height << endl;
+    cout << "frame_number is " << frame_number << endl;
+    srand((unsigned)time(NULL)); //时间点
+    long frameToStart = rand() % frame_number;//取  最大帧数之内的 随机数
+    cout <<"帧开始的地方"<< frameToStart << endl;
+
+    // Mat frame; //Mat对象  其实就是图像对象
+    char image_name[20];
+    imshow("che", frame);//显示
+    for(int i=0;i<frame_number;i++){
+      printf("iiii:%d\n",i);
+      capture.set(CV_CAP_PROP_POS_FRAMES, i);//从此时的帧数开始获取帧
+      if (!capture.read(frame))
+      {
+          cout << "读取视频失败" << endl;
+      }
+      sprintf(image_name, "%s%d%s", "image/",i, ".jpg");//保存的图片名
+      printf("image_name:%s\n",image_name);
+      imwrite(image_name, frame); //写入  前面是  path+name不要忘了后缀 后面是 帧
+    }
+    waitKey(0);
 
   ///Initialization
 GETBOUNDINGBOX:
