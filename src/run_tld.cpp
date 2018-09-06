@@ -1,5 +1,5 @@
 #include <opencv2/opencv.hpp>
-#include <opencv2/highgui/highgui.hpp>//��Ӵ˾䲻����˵����װ���óɹ�
+// #include <opencv2/highgui/highgui.hpp>//��Ӵ˾䲻����˵����װ���óɹ�
 #include <tld_utils.h>
 #include <iostream>
 #include <sstream>
@@ -109,9 +109,15 @@ int main(int argc, char * argv[]){
   //Read options
   read_options(argc,argv,capture,fs);
   //Init camera
-  if (!capture.isOpened())
+  // if (!capture.isOpened())
+  // {
+	// cout << "capture device failed to open!" << endl;
+  //   return 1;
+  // }
+  const string address = "http://192.168.8.1:8083/?action=stream.mjpg";
+  if (!capture.open(address))
   {
-	cout << "capture device failed to open!" << endl;
+	cout << "wifi failed to open!" << endl;
     return 1;
   }
   //Register mouse callback to draw the bounding box
@@ -138,29 +144,29 @@ int main(int argc, char * argv[]){
 	Mat dst(frame);	// 输出图像
   medianBlur(frame, frame, 5); //中值滤波
   
-  cvtColor( frame, frameHSV, CV_BGR2HSV ); //转换图像的颜色空间
+  // cvtColor( frame, frameHSV, CV_BGR2HSV ); //转换图像的颜色空间
   Mat dstTemp1(frame.rows, frame.cols, CV_8UC1);
   Mat dstTemp2(frame.rows, frame.cols, CV_8UC1);
   // 对HSV空间进行量化，得到2值图像，亮的部分为手的形状
-  inRange(frameHSV, Scalar(0,30,30), Scalar(40,170,256), dstTemp1);
-  inRange(frameHSV, Scalar(156,30,30), Scalar(180,170,256), dstTemp2);
+  inRange(frame, Scalar(0,30,30), Scalar(40,170,256), dstTemp1);
+  inRange(frame, Scalar(156,30,30), Scalar(180,170,256), dstTemp2);
   bitwise_or(dstTemp1, dstTemp2, mask);
-  imshow("frame", frameHSV);
+  // imshow("frame", frame);
   imshow("mask", mask);
     
-  // 形态学操作，去除噪声，并使手的边界更加清晰
-  Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
-  imshow("element", element);
+  // // 形态学操作，去除噪声，并使手的边界更加清晰
+  // Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
+  // imshow("element", element);
   
-  erode(mask, mask, element);//侵蚀
-  morphologyEx(mask, mask, MORPH_OPEN, element);
-  dilate(mask, mask, element);//膨胀
-  morphologyEx(mask, mask, MORPH_CLOSE, element);
+  // erode(mask, mask, element);//侵蚀
+  // morphologyEx(mask, mask, MORPH_OPEN, element);
+  // dilate(mask, mask, element);//膨胀
+  // morphologyEx(mask, mask, MORPH_CLOSE, element);
 
-  frame.copyTo(dst, mask);
-  imshow("dst", dst);
-  mask.release();
-  dst.release();
+  // frame.copyTo(dst, mask);
+  // imshow("dst", dst);
+  // mask.release();
+  // dst.release();
   // contours.clear();
   // hierarchy.clear();
   // filterContours.clear();
