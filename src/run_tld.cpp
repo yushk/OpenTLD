@@ -69,10 +69,8 @@ void print_help(char** argv){
   printf("-s    source video\n-b        bounding box file\n-tl  track and learn\n-r     repeat\n");
 }
 
- Mat thresh_callback(Mat src, void* )
- {
+ Mat thresh_callback(Mat threshold_output, Mat drawing ){
  
-   Mat threshold_output = src;
    vector<vector<Point> > contours;
    vector<Vec4i> hierarchy;
   /// Find contours
@@ -83,6 +81,10 @@ void print_help(char** argv){
    vector<vector<int> > hullsI( contours.size() );
    // Convexity defects
    vector<vector<Vec4i> > defects( contours.size() );
+  // 寻找质心
+    Moments moment = moments(threshold_output, true);  
+    Point center(moment.m10/moment.m00, moment.m01/moment.m00);  
+    circle(drawing, center, 8 ,Scalar(0, 0, 255), CV_FILLED);  
 
    double maxArea = 0;
    vector<Point> maxContour;
@@ -101,54 +103,46 @@ void print_help(char** argv){
      }
     }
    /// Draw contours + hull results
-   Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
+  //  Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
    for( int i = 0; i< contours.size(); i++ )
       {
         if(maxContour ==contours[i] ){
           Scalar color = Scalar( 0,0,255 );
-          drawContours( drawing, contours, i, color, -1, 8, vector<Vec4i>(), 0, Point() );
+          // drawContours( drawing, contours, i, color, -1, 8, vector<Vec4i>(), 0, Point() );
           //  drawContours(drawing, contours, i, Scalar(255), -1);
           drawContours( drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
-        }
-        // draw defects
-		    size_t count = contours[i].size();
-        std::cout<<"Count : "<<count<<std::endl;
-        if( count < 300 )
-            continue;
- 
-        vector<Vec4i>::iterator d =defects[i].begin();
-        while( d!=defects[i].end() ) {
-                Vec4i& v=(*d);
-      //       if(IndexOfBiggestContour == i)
-			// {
- 
-                int startidx=v[0]; 
-                Point ptStart( contours[i][startidx] ); // point of the contour where the defect begins
-                int endidx=v[1]; 
-                Point ptEnd( contours[i][endidx] ); // point of the contour where the defect ends
-                int faridx=v[2]; 
-                Point ptFar( contours[i][faridx] );// the farthest from the convex hull point within the defect
-                int depth = v[3] / 256; // distance between the farthest point and the convex hull
- 
-                if(depth > 30 && depth < 120)
-                {
-                line( drawing, ptStart, ptFar, CV_RGB(0,255,0), 2 );
-                line( drawing, ptEnd, ptFar, CV_RGB(0,255,0), 2 );
-                circle( drawing, ptStart,   4, Scalar(255,0,100), 2 );
-                circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
-                circle( drawing, ptFar,   4, Scalar(100,0,255), 2 );
- 
-				        printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
-					              ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);
-                }
-            // }
-            d++;
-        }
+          vector<Vec4i>::iterator d =defects[i].begin();
+          while( d!=defects[i].end() ) {
+                  Vec4i& v=(*d);
+                  int startidx=v[0]; 
+                  Point ptStart( contours[i][startidx] ); // point of the contour where the defect begins
+                  int endidx=v[1]; 
+                  Point ptEnd( contours[i][endidx] ); // point of the contour where the defect ends
+                  int faridx=v[2]; 
+                  Point ptFar( contours[i][faridx] );// the farthest from the convex hull point within the defect
+                  int depth = v[3] / 256; // distance between the farthest point and the convex hull
+                  char image_name[20];
+                  if(depth > 30 && depth < 120)
+                  {
+                  line( drawing, ptStart, ptFar, CV_RGB(0,255,0), 2 );
+                  line( drawing, ptEnd, ptFar, CV_RGB(0,255,0), 2 );
+                  circle( drawing, ptStart,   4, Scalar(255,0,100), 2 );
+                  circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
+                  circle( drawing, ptFar,   4, Scalar(100,0,255), 2 );
+                  // sprintf(image_name, "%d", d);
+                  // putText(drawing,image_name,ptFar,FONT_HERSHEY_SIMPLEX,1,Scalar(255,23,0),4,8);
+  
+                  printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
+                          ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);
+                  }
+              d++;
+          }
 
-
+          break;
+        }
       }
-  //  contours.clear();
-  //   hierarchy.clear();
+  contours.clear();
+  hierarchy.clear();
    return drawing;
  }
 
@@ -315,9 +309,8 @@ if (!fromfile){
       Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
       Mat dst(frame);	// 输出图像
       medianBlur(frame, frame, 5); //中值滤波
-      
       mask = gethand(frame);
-      imshow( "gethand", mask );
+      // imshow( "gethand", mask );
       // 形态学操作，去除噪声，并使手的边界更加清晰
       Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
       erode(mask, mask, element);//侵蚀
@@ -330,7 +323,7 @@ if (!fromfile){
       
       medianBlur(mask, mask, 5); //中值滤波
       // imshow( "gethand", mask );
-      dst = thresh_callback(mask, 0 ); // 寻找手势轮廓
+      dst = thresh_callback(mask, frame ); // 寻找手势轮廓
       imshow( "Hull demo", dst );
   
       // // get frame
