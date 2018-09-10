@@ -91,6 +91,7 @@ void print_help(char** argv){
       // find int type hull
       convexHull( Mat(contours[i]), hullsI[i], false ); 
 	    // get convexity defects
+      if(hullsI[i].size() > 3 )
 	    convexityDefects(Mat(contours[i]),hullsI[i], defects[i]);
 
      double area = contourArea(contours[i]);
@@ -99,7 +100,6 @@ void print_help(char** argv){
        maxContour = contours[i];
      }
     }
- 
    /// Draw contours + hull results
    Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
    for( int i = 0; i< contours.size(); i++ )
@@ -118,7 +118,7 @@ void print_help(char** argv){
  
         vector<Vec4i>::iterator d =defects[i].begin();
         while( d!=defects[i].end() ) {
-            Vec4i& v=(*d);
+                Vec4i& v=(*d);
       //       if(IndexOfBiggestContour == i)
 			// {
  
@@ -130,17 +130,17 @@ void print_help(char** argv){
                 Point ptFar( contours[i][faridx] );// the farthest from the convex hull point within the defect
                 int depth = v[3] / 256; // distance between the farthest point and the convex hull
  
-                if(depth > 20 && depth < 80)
+                if(depth > 30 && depth < 120)
                 {
                 line( drawing, ptStart, ptFar, CV_RGB(0,255,0), 2 );
                 line( drawing, ptEnd, ptFar, CV_RGB(0,255,0), 2 );
-				circle( drawing, ptStart,   4, Scalar(255,0,100), 2 );
-				circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
+                circle( drawing, ptStart,   4, Scalar(255,0,100), 2 );
+                circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
                 circle( drawing, ptFar,   4, Scalar(100,0,255), 2 );
-                }
  
-				/*printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
-					ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);*/
+				        printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
+					              ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);
+                }
             // }
             d++;
         }
@@ -244,12 +244,16 @@ Mat gethand(Mat frame){
 			/*
 			据资料显示，正常黄种人的Cr分量大约在133至173之间，
 			Cb分量大约在77至127之间。大家可以根据自己项目需求放大或缩小这两个分量的范围，会有不同的效果。
+      cr 反应rgb红色之间的差异
+      cb反应rgb蓝色之间的差异
 			*/
-			if ((currentCr[j] > 133) && (currentCr[j] < 173) && (currentCb[j] > 77) && (currentCb[j] < 127))
+    // printf("Cr:%d,cb:%d",currentCr[j],currentCb[j]);
+			if ((currentCr[j] > 127) && (currentCr[j] < 173) && (currentCb[j] > 77) && (currentCb[j] < 137))
 				current[j] = 255;
 			else
 				current[i] = 0;
 		}
+    // printf("\n");
 	}
 	// imshow("result", result);
   return result;
@@ -273,13 +277,7 @@ int main(int argc, char * argv[]){
 	// cout << "wifi failed to open!" << endl;
   //   return 1;
   // }
-  //Register mouse callback to draw the bounding box
-  cvNamedWindow("TLD",CV_WINDOW_AUTOSIZE);
-  cvSetMouseCallback( "TLD", mouseHandler, NULL );
-  //TLD framework
-  TLD tld;
-  //Read parameters file
-  tld.read(fs.getFirstTopLevelNode());
+
   Mat frame;
   Mat frameHSV;	// hsv空间
   Mat last_gray;
@@ -293,70 +291,16 @@ int main(int argc, char * argv[]){
       capture.set(CV_CAP_PROP_FRAME_HEIGHT,240);
   }
      
-  Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
-  Mat dst(frame);	// 输出图像
-  medianBlur(frame, frame, 5); //中值滤波
-  mask = gethand(frame);
-  
-  cvtColor( frame, frameHSV, CV_BGR2HSV ); //转换图像的颜色空间
-  Mat dstTemp1(frame.rows, frame.cols, CV_8UC1);
-  Mat dstTemp2(frame.rows, frame.cols, CV_8UC1);
-  // 对HSV空间进行量化，得到2值图像，亮的部分为手的形状
-  inRange(frame, Scalar(40,30,30), Scalar(70,170,256), dstTemp1);
-  inRange(frame, Scalar(156,30,30), Scalar(180,170,256), dstTemp2);
-  bitwise_or(dstTemp1, dstTemp2, mask);
-  // imshow("frame", frame);
-  imshow("dstTemp1", dstTemp1);
-  imshow("dstTemp2", dstTemp2);
-  imshow("mask", mask);
-    
-  // 形态学操作，去除噪声，并使手的边界更加清晰
-  Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
-  imshow("element", element);
-  
-  // 形态学操作，去除噪声，并使手的边界更加清晰
-  Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
-  erode(mask, mask, element);//侵蚀
-  morphologyEx(mask, mask, MORPH_OPEN, element);
-  dilate(mask, mask, element);//膨胀
-  morphologyEx(mask, mask, MORPH_CLOSE, element);
-  medianBlur(mask, mask, 5); //中值滤波
-  // mask.release();
-  // dst.release();
-  // contours.clear();
-  // hierarchy.clear();
-  // filterContours.clear();
-    
-    // 寻找手势轮廓
-    dst = thresh_callback(mask, 0 );
-    imshow( "Hull demo", dst );
 
-  ///Initialization
-  GETBOUNDINGBOX:
-    while(!gotBB) {
-      if (!fromfile){
+  
+if (!fromfile){
         capture >> frame;
       } else{
       first.copyTo(frame);
       }
-      cvtColor(frame, last_gray, CV_RGB2GRAY);
-      drawBox(frame,box);
-      imshow("TLD", frame);
-      if (cvWaitKey(33) == 'q')
-        return 0;
-    }
-    if (min(box.width,box.height)<(int)fs.getFirstTopLevelNode()["min_win"]) {
-        cout << "Bounding box too small, try again." << endl;
-        gotBB = false;
-        goto GETBOUNDINGBOX;
-    }
-    //Remove callback
-    cvSetMouseCallback( "TLD", NULL, NULL );
     printf("Initial Bounding Box = x:%d y:%d h:%d w:%d\n",box.x,box.y,box.width,box.height);
     //Output file
     FILE  *bb_file = fopen("bounding_boxes.txt","w");
-    //TLD initialization
-    tld.init(last_gray,box,bb_file);
 
     ///Run-time
     Mat current_gray;
@@ -367,29 +311,52 @@ int main(int argc, char * argv[]){
     int frames = 1;
     int detections = 1;
   REPEAT:
-    while(capture.read(frame)){
-      // get frame
-      cvtColor(frame, current_gray, CV_RGB2GRAY);
-      //Process Frame
-      tld.processFrame(last_gray,current_gray,pts1,pts2,pbox,status,tl,bb_file);
-      //Draw Points
-      if (status){
-        // drawPoints(frame,pts1);
-        // drawPoints(frame,pts2);
-        drawBox(frame,pbox);
-        detections++;
-      }
+  //   while(capture.read(frame)){
+      Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
+      Mat dst(frame);	// 输出图像
+      medianBlur(frame, frame, 5); //中值滤波
+      
+      mask = gethand(frame);
+      imshow( "gethand", mask );
+      // 形态学操作，去除噪声，并使手的边界更加清晰
+      Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
+      erode(mask, mask, element);//侵蚀
+      morphologyEx(mask, mask, MORPH_OPEN, element);
+      // imshow( "侵蚀", mask );
+      
+      dilate(mask, mask, element);//膨胀
+      morphologyEx(mask, mask, MORPH_CLOSE, element);
+      // imshow( "膨胀", mask );
+      
+      medianBlur(mask, mask, 5); //中值滤波
+      // imshow( "gethand", mask );
+      dst = thresh_callback(mask, 0 ); // 寻找手势轮廓
+      imshow( "Hull demo", dst );
+  
+      // // get frame
+      // cvtColor(frame, current_gray, CV_RGB2GRAY);
+      // //Process Frame
+      // tld.processFrame(last_gray,current_gray,pts1,pts2,pbox,status,tl,bb_file);
+      // //Draw Points
+      // if (status){
+      //   // drawPoints(frame,pts1);
+      //   // drawPoints(frame,pts2);
+      //   drawBox(frame,pbox);
+      //   detections++;
+      // }
       //Display
-      imshow("TLD", frame);
+      // dst.copyTo(frame);
+      // imshow("TLD", frame);
       //swap points and images
       swap(last_gray,current_gray);
       pts1.clear();
       pts2.clear();
       frames++;
       printf("Detection rate: %d/%d\n",detections,frames);
-      if (cvWaitKey(33) == 'q')
-        break;
-    }
+      // if (cvWaitKey(33) == 'q')
+        // break;
+    // }
+    waitKey(0);
     if (rep){
       rep = false;
       tl = false;
