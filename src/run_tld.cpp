@@ -1,5 +1,7 @@
 #include <opencv2/opencv.hpp>
-// #include <opencv2/highgui/highgui.hpp>//��Ӵ˾䲻����˵����װ���óɹ�
+ #include "opencv2/highgui/highgui.hpp"
+ #include "opencv2/imgproc/imgproc.hpp"
+ #include <stdlib.h>
 #include <tld_utils.h>
 #include <iostream>
 #include <sstream>
@@ -8,6 +10,7 @@
 #include <time.h>
 using namespace cv;
 using namespace std;
+RNG rng(12345);
 //Global variables
 Rect box;
 bool drawing_box = false;
@@ -66,6 +69,43 @@ void print_help(char** argv){
   printf("-s    source video\n-b        bounding box file\n-tl  track and learn\n-r     repeat\n");
 }
 
+ Mat thresh_callback(Mat src, void* )
+ {
+ 
+   Mat threshold_output = src;
+   vector<vector<Point> > contours;
+   vector<Vec4i> hierarchy;
+  /// Find contours
+   findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+   /// Find the convex hull object for each contour
+   vector<vector<Point> >hull( contours.size() );
+   double maxArea = 0;
+   vector<Point> maxContour;
+   for( int i = 0; i < contours.size(); i++ ) {  
+     convexHull( Mat(contours[i]), hull[i], false ); 
+     double area = contourArea(contours[i]);
+     if (area > maxArea){
+       maxArea = area;
+       maxContour = contours[i];
+     }
+    }
+ 
+   /// Draw contours + hull results
+   Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
+   for( int i = 0; i< contours.size(); i++ )
+      {
+        if(maxContour ==contours[i] ){
+          Scalar color = Scalar( 0,0,255 );
+          drawContours( drawing, contours, i, color, -1, 8, vector<Vec4i>(), 0, Point() );
+          //  drawContours(drawing, contours, i, Scalar(255), -1);
+          drawContours( drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
+        }
+      }
+  //  contours.clear();
+  //   hierarchy.clear();
+   return drawing;
+ }
+
 void read_options(int argc, char** argv,VideoCapture& capture,FileStorage &fs){
   for (int i=0;i<argc;i++){
       if (strcmp(argv[i],"-b")==0){
@@ -100,6 +140,73 @@ void read_options(int argc, char** argv,VideoCapture& capture,FileStorage &fs){
           rep = true;
       }
   }
+}
+void getpic(Mat* frame){
+  // int frame_width = (int)capture.get(CV_CAP_PROP_FRAME_WIDTH);
+  // int frame_height = (int)capture.get(CV_CAP_PROP_FRAME_HEIGHT);
+  // int frame_number = capture.get(CV_CAP_PROP_FRAME_COUNT);
+  // cout << "frame_width is " << frame_width << endl;
+  // cout << "frame_height is " << frame_height << endl;
+  // cout << "frame_number is " << frame_number << endl;
+  // srand((unsigned)time(NULL)); //
+  // long frameToStart = rand() % frame_number;//
+  // // Mat frame; //
+  // char image_name[20];
+  // imshow("che", frame);//
+  // // for(int i=0;i<frame_number;i++){
+  //   capture.set(CV_CAP_PROP_POS_FRAMES, 50);//
+  //   if (!capture.read(frame))
+  //   {
+  //       cout << "error " << endl;
+  //   }
+  //   sprintf(image_name, "%s%s", "image/1",".jpg");
+  //   printf("image_name:%s\n",image_name);
+  //   imwrite(image_name, frame); //
+  // // }
+  // waitKey(0);
+}
+// 根据皮肤颜色分割 获取手势
+Mat gethand(Mat frame){
+	Mat srcImage ;
+  frame.copyTo(srcImage);
+	if (!srcImage.data)
+	{
+		printf("could not load image...\n");
+		return -1;
+	}
+	// imshow("srcImage", srcImage);
+	Mat result, tmp;
+	Mat Y, Cr, Cb;
+	std::vector<Mat> channels;//定义一些Mat的变量用来存储Y Cr Cb的变量
+ 
+	srcImage.copyTo(tmp);//将原图拷贝一份到tmp中
+	cvtColor(tmp, tmp, CV_BGR2YCrCb);//转换到YCrCb空间
+	split(tmp, channels);//通道分离的图存在channels中
+	Y = channels.at(0);
+	Cr = channels.at(1);
+	Cb = channels.at(2);
+ 
+	result = Mat::zeros(srcImage.size(), CV_8UC1);
+	for (int i = 0; i < result.rows; i++)
+	{
+		//各个图首行的指针
+		uchar* currentCr = Cr.ptr< uchar>(i);
+		uchar* currentCb = Cb.ptr< uchar>(i);
+		uchar* current = result.ptr< uchar>(i);
+		for (int j = 0; j < result.cols; j++)
+		{
+			/*
+			据资料显示，正常黄种人的Cr分量大约在133至173之间，
+			Cb分量大约在77至127之间。大家可以根据自己项目需求放大或缩小这两个分量的范围，会有不同的效果。
+			*/
+			if ((currentCr[j] > 133) && (currentCr[j] < 173) && (currentCb[j] > 77) && (currentCb[j] < 127))
+				current[j] = 255;
+			else
+				current[i] = 0;
+		}
+	}
+	// imshow("result", result);
+  return result;
 }
 
 int main(int argc, char * argv[]){
@@ -139,10 +246,11 @@ int main(int argc, char * argv[]){
       capture.set(CV_CAP_PROP_FRAME_WIDTH,340);
       capture.set(CV_CAP_PROP_FRAME_HEIGHT,240);
   }
-  
+     
   Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
-	Mat dst(frame);	// 输出图像
+  Mat dst(frame);	// 输出图像
   medianBlur(frame, frame, 5); //中值滤波
+  mask = gethand(frame);
   
   cvtColor( frame, frameHSV, CV_BGR2HSV ); //转换图像的颜色空间
   Mat dstTemp1(frame.rows, frame.cols, CV_8UC1);
@@ -160,44 +268,22 @@ int main(int argc, char * argv[]){
   Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
   imshow("element", element);
   
+  // 形态学操作，去除噪声，并使手的边界更加清晰
+  Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
   erode(mask, mask, element);//侵蚀
   morphologyEx(mask, mask, MORPH_OPEN, element);
   dilate(mask, mask, element);//膨胀
   morphologyEx(mask, mask, MORPH_CLOSE, element);
-
-  frame.copyTo(dst, mask);
-  // imshow("dst", dst);
-  mask.release();
-  dst.release();
+  medianBlur(mask, mask, 5); //中值滤波
+  // mask.release();
+  // dst.release();
   // contours.clear();
   // hierarchy.clear();
   // filterContours.clear();
-
-  // int frame_width = (int)capture.get(CV_CAP_PROP_FRAME_WIDTH);
-  // int frame_height = (int)capture.get(CV_CAP_PROP_FRAME_HEIGHT);
-  // int frame_number = capture.get(CV_CAP_PROP_FRAME_COUNT);
-  // cout << "frame_width is " << frame_width << endl;
-  // cout << "frame_height is " << frame_height << endl;
-  // cout << "frame_number is " << frame_number << endl;
-  // srand((unsigned)time(NULL)); //ʱ���
-  // long frameToStart = rand() % frame_number;//ȡ  ���֡��֮�ڵ� �����
-  // cout <<"֡��ʼ�ĵط�"<< frameToStart << endl;
-
-  // // Mat frame; //Mat����  ��ʵ����ͼ�����
-  // char image_name[20];
-  // imshow("che", frame);//��ʾ
-  // for(int i=0;i<frame_number;i++){
-  //   printf("iiii:%d\n",i);
-  //   capture.set(CV_CAP_PROP_POS_FRAMES, i);//�Ӵ�ʱ��֡����ʼ��ȡ֡
-  //   if (!capture.read(frame))
-  //   {
-  //       cout << "��ȡ��Ƶʧ��" << endl;
-  //   }
-  //   sprintf(image_name, "%s%d%s", "image/",i, ".jpg");//�����ͼƬ��
-  //   printf("image_name:%s\n",image_name);
-  //   imwrite(image_name, frame); //д��  ǰ����  path+name��Ҫ���˺�׺ ������ ֡
-  // }
-  // waitKey(0);
+    
+    // 寻找手势轮廓
+    dst = thresh_callback(mask, 0 );
+    imshow( "Hull demo", dst );
 
   ///Initialization
   GETBOUNDINGBOX:
@@ -236,7 +322,7 @@ int main(int argc, char * argv[]){
     int detections = 1;
   REPEAT:
     while(capture.read(frame)){
-      //get frame
+      // get frame
       cvtColor(frame, current_gray, CV_RGB2GRAY);
       //Process Frame
       tld.processFrame(last_gray,current_gray,pts1,pts2,pbox,status,tl,bb_file);

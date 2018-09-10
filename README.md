@@ -49,3 +49,5 @@ https://blog.csdn.net/taily_duan/article/details/52130135
 http://www.elecfans.com/consume/483057.html 手势
 https://blog.csdn.net/qq5132834/article/details/42682947?locationNum=2 轮廓识别
 https://blog.csdn.net/wangshuai610/article/details/80040317 手势动作识别剪刀石头布
+https://blog.csdn.net/yuan1125/article/details/62226382 肤色检测
+https://blog.csdn.net/linqianbi/article/details/79155823 肤色检测
