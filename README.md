@@ -20,6 +20,9 @@ This is a work in progress, as of right now the code is functional but pretty sl
     ./run_tld -p ../parameters.yml -tl
 ### To run from file
     ./run_tld -p ../parameters.yml -s ../datasets/06_car/car.mpg -tl
+    ./run_tld -p ../parameters.yml -s ../datasets/11_hand/hand.mp4 -tl
+    ./run_tld -p ../parameters.yml -s ../datasets/11_hand/hand.png -tl
+    
 ### To init bounding box from file
     ./run_tld -p ../parameters.yml -s ../datasets/06_car/car.mpg -b ../datasets/06_car/init.txt -tl
 ### To train only in the firs frame (no tracking, no learning)
@@ -45,5 +48,6 @@ Reference
 https://blog.csdn.net/taily_duan/article/details/52130135
 http://www.elecfans.com/consume/483057.html 手势
 https://blog.csdn.net/qq5132834/article/details/42682947?locationNum=2 轮廓识别
+https://blog.csdn.net/wangshuai610/article/details/80040317 手势动作识别剪刀石头布
 https://blog.csdn.net/yuan1125/article/details/62226382 肤色检测
 https://blog.csdn.net/linqianbi/article/details/79155823 肤色检测

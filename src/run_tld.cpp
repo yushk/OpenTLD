@@ -298,6 +298,22 @@ int main(int argc, char * argv[]){
   medianBlur(frame, frame, 5); //中值滤波
   mask = gethand(frame);
   
+  cvtColor( frame, frameHSV, CV_BGR2HSV ); //转换图像的颜色空间
+  Mat dstTemp1(frame.rows, frame.cols, CV_8UC1);
+  Mat dstTemp2(frame.rows, frame.cols, CV_8UC1);
+  // 对HSV空间进行量化，得到2值图像，亮的部分为手的形状
+  inRange(frame, Scalar(40,30,30), Scalar(70,170,256), dstTemp1);
+  inRange(frame, Scalar(156,30,30), Scalar(180,170,256), dstTemp2);
+  bitwise_or(dstTemp1, dstTemp2, mask);
+  // imshow("frame", frame);
+  imshow("dstTemp1", dstTemp1);
+  imshow("dstTemp2", dstTemp2);
+  imshow("mask", mask);
+    
+  // 形态学操作，去除噪声，并使手的边界更加清晰
+  Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
+  imshow("element", element);
+  
   // 形态学操作，去除噪声，并使手的边界更加清晰
   Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
   erode(mask, mask, element);//侵蚀
