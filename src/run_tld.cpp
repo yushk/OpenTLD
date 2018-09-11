@@ -64,6 +64,21 @@ void mouseHandler(int event, int x, int y, int flags, void *param){
   }
 }
 
+float getTwoPointDistance(Point pointO, Point pointA)
+{
+    float distance;
+    distance = powf((pointO.x - pointA.x), 2) + powf((pointO.y - pointA.y), 2);
+    distance = sqrtf(distance);
+    return distance;
+}
+
+float getLineSlope(Point a,Point b){
+  float k;
+   printf("start(%d,%d) end(%d,%d)\n",
+                          a.x, a.y, b.x, b.y);
+  k = (a.y-b.y)%(a.x-b.x);
+  return k;
+}
 void print_help(char** argv){
   printf("use:\n     %s -p /path/parameters.yml\n",argv[0]);
   printf("-s    source video\n-b        bounding box file\n-tl  track and learn\n-r     repeat\n");
@@ -112,6 +127,8 @@ void print_help(char** argv){
           //  drawContours(drawing, contours, i, Scalar(255), -1);
           drawContours( drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
           vector<Vec4i>::iterator d =defects[i].begin();
+          int a=0;
+          Point list[4];
           while( d!=defects[i].end() ) {
                   Vec4i& v=(*d);
                   int startidx=v[0]; 
@@ -124,26 +141,54 @@ void print_help(char** argv){
                   char image_name[20];
                   if(depth > 30 && depth < 120)
                   {
+                 
                   line( drawing, ptStart, ptFar, CV_RGB(0,255,0), 2 );
                   line( drawing, ptEnd, ptFar, CV_RGB(0,255,0), 2 );
                   circle( drawing, ptStart,   4, Scalar(255,0,100), 2 );
                   circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
                   circle( drawing, ptFar,   4, Scalar(100,0,255), 2 );
-                  // sprintf(image_name, "%d", d);
-                  // putText(drawing,image_name,ptFar,FONT_HERSHEY_SIMPLEX,1,Scalar(255,23,0),4,8);
-  
+                  sprintf(image_name, "%d", a);
+                  printf("aaaa:%d,depth:%d\n",a,depth);
+                  putText(drawing,image_name,ptFar,FONT_HERSHEY_SIMPLEX,0.5,Scalar(0,0,0),1,8);
+                  a++;
+                  if(a==3){
+                    list[0]=ptStart;
+                    list[1]=ptEnd;
+                  }else if(a==4) {
+                    list[2]=ptStart;
+                    list[3]=ptEnd;
+                    }
                   printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
                           ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);
                   }
               d++;
           }
 
+          
+          if (a==4){
+            float kk;
+              printf("okokokokokokok\n");
+              float dis1= getTwoPointDistance(list[0],list[3]);
+              float dis2= getTwoPointDistance(list[1],list[2]);
+              if(dis1>dis2){
+               kk= getLineSlope(list[0],list[3]);
+                printf("dis1 kk:%f\n",kk);
+              }else{
+                kk= getLineSlope(list[1],list[2]);
+                printf("dis2 kk:%f\n",kk);
+                
+              }
+              printf("dis1:%f,dis2:%f\n",dis1,dis2);
+             line( drawing, list[0], list[3], CV_RGB(0,0,0), 2 );
+             line( drawing, list[1], list[2], CV_RGB(255,255,255), 2 );
+            
+          }
           break;
         }
       }
   contours.clear();
   hierarchy.clear();
-   return drawing;
+  return drawing;
  }
 
 void read_options(int argc, char** argv,VideoCapture& capture,FileStorage &fs){
