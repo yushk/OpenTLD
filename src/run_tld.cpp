@@ -72,19 +72,35 @@ float getTwoPointDistance(Point pointO, Point pointA)
     return distance;
 }
 
-float getLineSlope(Point a,Point b){
-  float k;
-   printf("start(%d,%d) end(%d,%d)\n",
-                          a.x, a.y, b.x, b.y);
-  k = (a.y-b.y)%(a.x-b.x);
-  return k;
+float computeAngle(Point pt0, Point pt1)
+{
+	int dx = pt1.x - pt0.x;
+	int dy = pt1.y - pt0.y;
+  printf("dx:%d,dy:%d",dx,dy);
+	if(dx == 0)
+	{
+		if(dy < 0)
+		{
+			return CV_PI / 2.0;
+		}
+		else if(dy > 0)
+		{
+			return -CV_PI / 2.0;
+		}
+		else
+		{
+			return 0.0;
+		}
+	}
+	return atanf((float)dy / dx);
 }
+
 void print_help(char** argv){
   printf("use:\n     %s -p /path/parameters.yml\n",argv[0]);
   printf("-s    source video\n-b        bounding box file\n-tl  track and learn\n-r     repeat\n");
 }
 
- Mat thresh_callback(Mat threshold_output, Mat drawing ){
+ Mat thresh_callback(Mat threshold_output, Mat drawing,float &angle, int &y ){
  
    vector<vector<Point> > contours;
    vector<Vec4i> hierarchy;
@@ -171,17 +187,18 @@ void print_help(char** argv){
               float dis1= getTwoPointDistance(list[0],list[3]);
               float dis2= getTwoPointDistance(list[1],list[2]);
               if(dis1>dis2){
-               kk= getLineSlope(list[0],list[3]);
+               kk= computeAngle(list[0],list[3]);
                 printf("dis1 kk:%f\n",kk);
               }else{
-                kk= getLineSlope(list[1],list[2]);
+                kk= computeAngle(list[1],list[2]);
                 printf("dis2 kk:%f\n",kk);
                 
               }
+              angle = kk;
+              y = center.y;
               printf("dis1:%f,dis2:%f\n",dis1,dis2);
              line( drawing, list[0], list[3], CV_RGB(0,0,0), 2 );
              line( drawing, list[1], list[2], CV_RGB(255,255,255), 2 );
-            
           }
           break;
         }
@@ -368,9 +385,11 @@ if (!fromfile){
       
       medianBlur(mask, mask, 5); //中值滤波
       // imshow( "gethand", mask );
-      dst = thresh_callback(mask, frame ); // 寻找手势轮廓
+      float angle;
+      int y;
+      dst = thresh_callback(mask, frame,angle,y ); // 寻找手势轮廓
       imshow( "Hull demo", dst );
-  
+      printf("angle:%f,y:%d\n",angle,y);
       // // get frame
       // cvtColor(frame, current_gray, CV_RGB2GRAY);
       // //Process Frame
