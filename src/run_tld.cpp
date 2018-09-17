@@ -367,7 +367,7 @@ if (!fromfile){
     int frames = 1;
     int detections = 1;
   REPEAT:
-  //   while(capture.read(frame)){
+    while(capture.read(frame)){
       Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
       Mat dst(frame);	// 输出图像
       medianBlur(frame, frame, 5); //中值滤波
@@ -410,10 +410,10 @@ if (!fromfile){
       pts2.clear();
       frames++;
       printf("Detection rate: %d/%d\n",detections,frames);
-      // if (cvWaitKey(33) == 'q')
-        // break;
-    // }
-    waitKey(0);
+      if (cvWaitKey(33) == 'q')
+        break;
+    }
+    // waitKey(0);
     if (rep){
       rep = false;
       tl = false;
