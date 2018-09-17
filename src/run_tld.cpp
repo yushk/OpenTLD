@@ -303,8 +303,9 @@ Mat gethand(Mat frame){
       cr 反应rgb红色之间的差异
       cb反应rgb蓝色之间的差异
 			*/
-    // printf("Cr:%d,cb:%d",currentCr[j],currentCb[j]);
-			if ((currentCr[j] > 127) && (currentCr[j] < 173) && (currentCb[j] > 77) && (currentCb[j] < 137))
+    // fprintf(bb_file,"Cr:%d,cb:%d",currentCr[j],currentCb[j]);
+    
+			if ((currentCr[j] > 133) && (currentCr[j] < 173) && (currentCb[j] > 77) && (currentCb[j] < 137))
 				current[j] = 255;
 			else
 				current[i] = 0;
@@ -372,7 +373,7 @@ if (!fromfile){
       Mat dst(frame);	// 输出图像
       medianBlur(frame, frame, 5); //中值滤波
       mask = gethand(frame);
-      // imshow( "gethand", mask );
+      imshow( "gethand", mask );
       // 形态学操作，去除噪声，并使手的边界更加清晰
       Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
       erode(mask, mask, element);//侵蚀
@@ -409,7 +410,7 @@ if (!fromfile){
       pts1.clear();
       pts2.clear();
       frames++;
-      printf("Detection rate: %d/%d\n",detections,frames);
+      // printf("Detection rate: %d/%d\n",detections,frames);
       if (cvWaitKey(33) == 'q')
         break;
     }
