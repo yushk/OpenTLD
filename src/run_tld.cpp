@@ -63,7 +63,7 @@ void mouseHandler(int event, int x, int y, int flags, void *param){
     break;
   }
 }
-
+// 计算两点距离
 float getTwoPointDistance(Point pointO, Point pointA)
 {
     float distance;
@@ -72,6 +72,7 @@ float getTwoPointDistance(Point pointO, Point pointA)
     return distance;
 }
 
+// 计算直线斜率
 float computeAngle(Point pt0, Point pt1)
 {
 	int dx = pt1.x - pt0.x;
@@ -144,6 +145,8 @@ void print_help(char** argv){
           drawContours( drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
           vector<Vec4i>::iterator d =defects[i].begin();
           int a=0;
+          Point listStart[4];
+          Point listEnd[4];
           Point list[4];
           while( d!=defects[i].end() ) {
                   Vec4i& v=(*d);
@@ -160,45 +163,72 @@ void print_help(char** argv){
                  
                   line( drawing, ptStart, ptFar, CV_RGB(0,255,0), 2 );
                   line( drawing, ptEnd, ptFar, CV_RGB(0,255,0), 2 );
-                  circle( drawing, ptStart,   4, Scalar(255,0,100), 2 );
+                  circle( drawing, ptStart,   4, Scalar(0,0,0), 2 );
                   circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
                   circle( drawing, ptFar,   4, Scalar(100,0,255), 2 );
                   sprintf(image_name, "%d", a);
                   printf("aaaa:%d,depth:%d\n",a,depth);
                   putText(drawing,image_name,ptFar,FONT_HERSHEY_SIMPLEX,0.5,Scalar(0,0,0),1,8);
+                  list[a] = ptFar;
+                  listStart[a] = ptStart;
+                  listEnd[a] = ptEnd;
                   a++;
-                  if(a==3){
-                    list[0]=ptStart;
-                    list[1]=ptEnd;
-                  }else if(a==4) {
-                    list[2]=ptStart;
-                    list[3]=ptEnd;
-                    }
                   printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
                           ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);
                   }
               d++;
           }
-
           
           if (a==4){
-            float kk;
-              printf("okokokokokokok\n");
-              float dis1= getTwoPointDistance(list[0],list[3]);
-              float dis2= getTwoPointDistance(list[1],list[2]);
-              if(dis1>dis2){
-               kk= computeAngle(list[0],list[3]);
-                printf("dis1 kk:%f\n",kk);
-              }else{
-                kk= computeAngle(list[1],list[2]);
-                printf("dis2 kk:%f\n",kk);
-                
+              float dis[6];
+              dis[0]= getTwoPointDistance(list[0],list[1]);
+              dis[1]= getTwoPointDistance(list[1],list[2]);
+              dis[2]= getTwoPointDistance(list[2],list[3]);
+              dis[3]= getTwoPointDistance(list[0],list[3]);
+              dis[4]= getTwoPointDistance(list[1],list[3]);
+              dis[5]= getTwoPointDistance(list[0],list[2]);
+              float max=dis[5];
+              for (int m=0;m<5;m++){
+                if(dis[m]>max){
+                  max = dis[m];
+                }
               }
-              angle = kk;
+              Point start;
+              Point end;
+              for (int n=0;n<6;n++){
+                if(max ==dis[n]){
+                  switch(n){
+                    case 0:
+                      start = list[0];
+                      end = list[1];
+                      break;
+                    case 1: 
+                      start = list[1];
+                      end = list[2];
+                      break;
+                    case 2:
+                      start = list[2];
+                      end = list[3];
+                      break;
+                    case 3:
+                      start = list[0];
+                      end = list[3];
+                      break;
+                    case 4:
+                      start = list[0];
+                      end = list[2];
+                      break;
+                    case 5:
+                      start = list[1];
+                      end = list[3];
+                      break;
+                  }
+                }
+              }
+             
+              angle= computeAngle(list[0],list[1]);
               y = center.y;
-              printf("dis1:%f,dis2:%f\n",dis1,dis2);
-             line( drawing, list[0], list[3], CV_RGB(0,0,0), 2 );
-             line( drawing, list[1], list[2], CV_RGB(255,255,255), 2 );
+              line( drawing, start, end, CV_RGB(0,0,0), 2 );
           }
           break;
         }
@@ -406,10 +436,12 @@ if (!fromfile){
       // dst.copyTo(frame);
       // imshow("TLD", frame);
       //swap points and images
-      swap(last_gray,current_gray);
-      pts1.clear();
-      pts2.clear();
-      frames++;
+    //   swap(last_gray,current_gray);
+    //   pts1.clear();
+    //   pts2.clear();
+    //   frames++;
+    // waitKey(0);
+      
       // printf("Detection rate: %d/%d\n",detections,frames);
       if (cvWaitKey(33) == 'q')
         break;

@@ -51,3 +51,7 @@ https://blog.csdn.net/qq5132834/article/details/42682947?locationNum=2 轮廓识
 https://blog.csdn.net/wangshuai610/article/details/80040317 手势动作识别剪刀石头布
 https://blog.csdn.net/yuan1125/article/details/62226382 肤色检测
 https://blog.csdn.net/linqianbi/article/details/79155823 肤色检测
+https://blog.csdn.net/logan_lin/article/details/79517571 手势检测及手掌质心的运动轨迹（opencv）
+
+### Issue
+1 怎么找到具体的某个手指
