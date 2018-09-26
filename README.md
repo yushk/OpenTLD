@@ -54,4 +54,10 @@ https://blog.csdn.net/linqianbi/article/details/79155823 肤色检测
 https://blog.csdn.net/logan_lin/article/details/79517571 手势检测及手掌质心的运动轨迹（opencv）
 
 ### Issue
-1 怎么找到具体的某个手指
+1. 怎么找到具体的某个手指
+
+2. 如何建立socket 链接
+http://cache.baiducontent.com/c?m=9d78d513d9c04aaf4fece4690d61c067695784692bd6a0027fa38449e36e4c403771e3cc30236007c4c40c7000dc5e5d9af03470341767f7c5c7d20c9bf985295c953a713559914165964aeb9c077f9260c74de9d845b0fced73d5e98498c207138c085424d7e78b2c0512cd78f06232f4a6ee1253004e&p=8b2a975381934eae5e8185216153&newp=882a9443969801fc57efca64594792695c0fc13423938b5712d7984e8732002c0331a3fa7c7f4c0bd7c17e6104ae4d5ce0f13774330524bd91c9895e9bd6d37f6d877068265cdd01&user=baidu&fm=sc&query=192%2E168%2E8%2E1%3A2001&qid=ce5a8a9e001167eb&p1=5
+
+局域网聊天 socket
+https://www.cnblogs.com/diligenceday/p/6241021.html
