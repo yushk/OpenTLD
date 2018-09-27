@@ -7,12 +7,13 @@ using namespace std;
 #include<sys/socket.h>
 #include<arpa/inet.h>
 #include<unistd.h>
+#include <cstdlib>
 void client()
 {
-    const unsigned short SERVERPORT = 53556;
+    const unsigned short SERVERPORT = 2001;
     const int MAXSIZE = 1024;
-    const char* SERVER_IP = "115.159.90.99";
-    const char* DATA = "this is a client message ";
+    const char* SERVER_IP = "192.168.8.1";
+    char* DATA = "this is a client message ";
 
     int sock, recvBytes;
     char buf[MAXSIZE];
@@ -36,12 +37,15 @@ void client()
     }
 
     write(sock, const_cast<char*>(DATA), strlen(DATA) );
+    DATA = "ssssssss";
+    write(sock, const_cast<char*>(DATA), strlen(DATA) );
+    
     if( (recvBytes = recv(sock, buf, MAXSIZE, 0)) == -1)
     {
         cerr<<"recv error!"<<endl;
         exit(1);
     }
-
+    cerr<<"ssssssssssss"<<endl;
     buf[recvBytes] = '\0';
     cout<<buf<<endl;
     close(sock);

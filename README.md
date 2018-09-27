@@ -20,7 +20,7 @@ This is a work in progress, as of right now the code is functional but pretty sl
     ./run_tld -p ../parameters.yml -tl
 ### To run from file
     ./run_tld -p ../parameters.yml -s ../datasets/06_car/car.mpg -tl
-    ./run_tld -p ../parameters.yml -s ../datasets/11_hand/hand.mp4 -tl
+    ./run_tld -p ../parameters.yml -s ../datasets/11_hand/right.mp4 -tl
     ./run_tld -p ../parameters.yml -s ../datasets/11_hand/hand.png -tl
     
 ### To init bounding box from file

@@ -1,8 +1,8 @@
 #include <opencv2/opencv.hpp>
- #include "opencv2/highgui/highgui.hpp"
- #include "opencv2/imgproc/imgproc.hpp"
- #include <stdlib.h>
-#include <tld_utils.h>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include <stdlib.h>
+#include "tld_utils.h"
 #include <iostream>
 #include <sstream>
 #include <TLD.h>
@@ -10,6 +10,15 @@
 #include <time.h>
 using namespace cv;
 using namespace std;
+
+#include<iostream>
+#include<string.h>
+#include<netinet/in.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
+#include<unistd.h>
+#include <cstdlib>
 RNG rng(12345);
 //Global variables
 Rect box;
@@ -64,8 +73,7 @@ void mouseHandler(int event, int x, int y, int flags, void *param){
   }
 }
 // 计算两点距离
-float getTwoPointDistance(Point pointO, Point pointA)
-{
+float getTwoPointDistance(Point pointO, Point pointA) {
     float distance;
     distance = powf((pointO.x - pointA.x), 2) + powf((pointO.y - pointA.y), 2);
     distance = sqrtf(distance);
@@ -73,8 +81,7 @@ float getTwoPointDistance(Point pointO, Point pointA)
 }
 
 // 计算直线斜率
-float computeAngle(Point pt0, Point pt1)
-{
+float computeAngle(Point pt0, Point pt1) {
 	int dx = pt1.x - pt0.x;
 	int dy = pt1.y - pt0.y;
   printf("dx:%d,dy:%d",dx,dy);
@@ -346,7 +353,51 @@ Mat gethand(Mat frame){
   return result;
 }
 
+void client()
+{
+    const unsigned short SERVERPORT = 2001;
+    const int MAXSIZE = 1024;
+    const char* SERVER_IP = "192.168.8.1";
+    const char* DATA = "this is a client message ";
+
+    int sock, recvBytes;
+    char buf[MAXSIZE];
+//    hostent *host;
+    sockaddr_in serv_addr;
+
+    if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        cerr<<"socket create fail!"<<endl;
+        exit(1);
+    }
+    bzero( &serv_addr, sizeof(serv_addr) );
+    serv_addr.sin_family =  AF_INET;
+    serv_addr.sin_port = htons(SERVERPORT);
+    serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+
+    if( connect(sock, (sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
+    {
+        cerr<<"connect error"<<endl;
+        exit(1);
+    }
+
+    write(sock, const_cast<char*>(DATA), strlen(DATA) );
+    if( (recvBytes = recv(sock, buf, MAXSIZE, 0)) == -1)
+    {
+        cerr<<"recv error!"<<endl;
+        exit(1);
+    }
+    cerr<<"ssssssssssss"<<endl;
+    buf[recvBytes] = '\0';
+    cout<<buf<<endl;
+    close(sock);
+}
+
 int main(int argc, char * argv[]){
+  const unsigned short SERVERPORT = 2001;
+  const int MAXSIZE = 1024;
+  const char* SERVER_IP = "192.168.8.1";
+  const char* DATA = "go";
   VideoCapture capture;
   capture.open(0);
   FileStorage fs;
@@ -358,6 +409,28 @@ int main(int argc, char * argv[]){
 	cout << "capture device failed to open!" << endl;
     return 1;
   }
+  
+
+    int sock, recvBytes;
+    char buf[MAXSIZE];
+//    hostent *host;
+    sockaddr_in serv_addr;
+
+    if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        cerr<<"socket create fail!"<<endl;
+        exit(1);
+    }
+    bzero( &serv_addr, sizeof(serv_addr) );
+    serv_addr.sin_family =  AF_INET;
+    serv_addr.sin_port = htons(SERVERPORT);
+    serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+
+    if( connect(sock, (sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
+    {
+        cerr<<"connect error"<<endl;
+        exit(1);
+    }
   // const string address = "http://192.168.8.1:8083/?action=stream.mjpg";
   // if (!capture.open(address))
   // {
@@ -421,6 +494,8 @@ if (!fromfile){
       dst = thresh_callback(mask, frame,angle,y ); // 寻找手势轮廓
       imshow( "Hull demo", dst );
       printf("angle:%f,y:%d\n",angle,y);
+      DATA="left"
+      write(sock, DATA, strlen(DATA) );
       // // get frame
       // cvtColor(frame, current_gray, CV_RGB2GRAY);
       // //Process Frame
