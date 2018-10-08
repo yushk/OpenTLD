@@ -471,8 +471,8 @@ if (!fromfile){
     int detections = 1;
     float angle;
     int y;
-    float angleList[10];
-    int yList[10];
+    float angleList[1500];
+    int yList[1500];
     int i=0;
   REPEAT:
     while(capture.read(frame)){
@@ -480,7 +480,7 @@ if (!fromfile){
       Mat dst(frame);	// 输出图像
       medianBlur(frame, frame, 5); //中值滤波
       mask = gethand(frame);
-      imshow( "gethand", mask );
+      // imshow( "gethand", mask );
       // 形态学操作，去除噪声，并使手的边界更加清晰
       Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
       erode(mask, mask, element);//侵蚀
@@ -491,11 +491,45 @@ if (!fromfile){
      
       dst = thresh_callback(mask, frame, angle, y ,status); // 寻找手势轮廓
       imshow( "Hull demo", dst );
+      if(status){
       // printf("angle:%f,y:%d\n",angle,y);
-      if(!status){
-
-        DATA="left";
-        write(sock, DATA, strlen(DATA));
+        angleList[i] = angle;
+        yList[i] = y;
+        i++;
+        // if(i==15){
+        //   i=0;
+          
+        //   // printf("RES angle:%f,y:%d\n",angleList[14]-angleList[0],yList[14]-yList[0]);
+        //  for(int a=0;a<15;a++){
+        //     // printf("RES angle=%f,y=%d,a=%d\n",angleList[a],yList[a]);
+        //   }
+        //   memset(angleList, 0, sizeof(angleList));
+        //   memset(yList, 0, sizeof(yList));
+        //   for(int a=0;a<15;a++){
+        //     // printf("RES angle=%f,y=%d,a=%d\n",angleList[a],yList[a],a);
+        //   }
+        // }
+      }else if(i>0){
+        if(angleList[i-1]-angleList[0] > 0.3){
+            DATA="left";
+            write(sock, DATA, strlen(DATA));
+          }else if(angleList[i-1]-angleList[0] < -0.3){
+            DATA="right";
+            write(sock, DATA, strlen(DATA));
+          }else if(yList[i-1]-yList[0]>10){
+            DATA="down";
+            write(sock, DATA, strlen(DATA));
+          }else if(yList[i-1]-yList[0]<-10){
+            DATA="up";
+            write(sock, DATA, strlen(DATA));
+          }
+            printf("RES angle=%f,y=%d,a=%d\n",angleList[0],yList[0],0);
+            printf("RES angle=%f,y=%d,a=%d\n",angleList[i-1],yList[i-1],i-1);
+          
+          printf("RES angle:%f,y:%d\n",angleList[i-1]-angleList[0],yList[i-1]-yList[0]);
+        i=0;
+        memset(angleList, 0, sizeof(angleList));
+        memset(yList, 0, sizeof(yList));
       }
 
       if (cvWaitKey(33) == 'q')
