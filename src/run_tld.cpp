@@ -84,7 +84,7 @@ float getTwoPointDistance(Point pointO, Point pointA) {
 float computeAngle(Point pt0, Point pt1) {
 	int dx = pt1.x - pt0.x;
 	int dy = pt1.y - pt0.y;
-  printf("dx:%d,dy:%d",dx,dy);
+  // printf("dx:%d,dy:%d",dx,dy);
 	if(dx == 0)
 	{
 		if(dy < 0)
@@ -108,7 +108,7 @@ void print_help(char** argv){
   printf("-s    source video\n-b        bounding box file\n-tl  track and learn\n-r     repeat\n");
 }
 
- Mat thresh_callback(Mat threshold_output, Mat drawing,float &angle, int &y ){
+ Mat thresh_callback(Mat threshold_output, Mat drawing,float &angle, int &y, bool &flag ){
  
    vector<vector<Point> > contours;
    vector<Vec4i> hierarchy;
@@ -174,19 +174,20 @@ void print_help(char** argv){
                   circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
                   circle( drawing, ptFar,   4, Scalar(100,0,255), 2 );
                   sprintf(image_name, "%d", a);
-                  printf("aaaa:%d,depth:%d\n",a,depth);
+                  // printf("aaaa:%d,depth:%d\n",a,depth);
                   putText(drawing,image_name,ptFar,FONT_HERSHEY_SIMPLEX,0.5,Scalar(0,0,0),1,8);
                   list[a] = ptFar;
                   listStart[a] = ptStart;
                   listEnd[a] = ptEnd;
                   a++;
-                  printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
-                          ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);
+                  // printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
+                  //         ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);
                   }
               d++;
           }
           
           if (a==4){
+              flag = true;
               float dis[6];
               dis[0]= getTwoPointDistance(list[0],list[1]);
               dis[1]= getTwoPointDistance(list[1],list[2]);
@@ -236,6 +237,8 @@ void print_help(char** argv){
               angle= computeAngle(list[0],list[1]);
               y = center.y;
               line( drawing, start, end, CV_RGB(0,0,0), 2 );
+          }else{
+            flag = false;
           }
           break;
         }
@@ -341,13 +344,11 @@ Mat gethand(Mat frame){
       cb反应rgb蓝色之间的差异
 			*/
     // fprintf(bb_file,"Cr:%d,cb:%d",currentCr[j],currentCb[j]);
-    
 			if ((currentCr[j] > 133) && (currentCr[j] < 173) && (currentCb[j] > 77) && (currentCb[j] < 137))
 				current[j] = 255;
 			else
 				current[i] = 0;
 		}
-    // printf("\n");
 	}
 	// imshow("result", result);
   return result;
@@ -409,28 +410,26 @@ int main(int argc, char * argv[]){
 	cout << "capture device failed to open!" << endl;
     return 1;
   }
-  
-
     int sock, recvBytes;
     char buf[MAXSIZE];
 //    hostent *host;
     sockaddr_in serv_addr;
 
-    if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-        cerr<<"socket create fail!"<<endl;
-        exit(1);
-    }
-    bzero( &serv_addr, sizeof(serv_addr) );
-    serv_addr.sin_family =  AF_INET;
-    serv_addr.sin_port = htons(SERVERPORT);
-    serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+    // if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    // {
+    //     cerr<<"socket create fail!"<<endl;
+    //     exit(1);
+    // }
+    // bzero( &serv_addr, sizeof(serv_addr) );
+    // serv_addr.sin_family =  AF_INET;
+    // serv_addr.sin_port = htons(SERVERPORT);
+    // serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
-    if( connect(sock, (sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
-    {
-        cerr<<"connect error"<<endl;
-        exit(1);
-    }
+    // if( connect(sock, (sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
+    // {
+    //     cerr<<"connect error"<<endl;
+    //     exit(1);
+    // }
   // const string address = "http://192.168.8.1:8083/?action=stream.mjpg";
   // if (!capture.open(address))
   // {
@@ -470,6 +469,11 @@ if (!fromfile){
     bool status=true;
     int frames = 1;
     int detections = 1;
+    float angle;
+    int y;
+    float angleList[10];
+    int yList[10];
+    int i=0;
   REPEAT:
     while(capture.read(frame)){
       Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
@@ -481,47 +485,22 @@ if (!fromfile){
       Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
       erode(mask, mask, element);//侵蚀
       morphologyEx(mask, mask, MORPH_OPEN, element);
-      // imshow( "侵蚀", mask );
-      
       dilate(mask, mask, element);//膨胀
       morphologyEx(mask, mask, MORPH_CLOSE, element);
-      // imshow( "膨胀", mask );
-      
       medianBlur(mask, mask, 5); //中值滤波
-      // imshow( "gethand", mask );
-      float angle;
-      int y;
-      dst = thresh_callback(mask, frame,angle,y ); // 寻找手势轮廓
+     
+      dst = thresh_callback(mask, frame, angle, y ,status); // 寻找手势轮廓
       imshow( "Hull demo", dst );
-      printf("angle:%f,y:%d\n",angle,y);
-      DATA="left"
-      write(sock, DATA, strlen(DATA) );
-      // // get frame
-      // cvtColor(frame, current_gray, CV_RGB2GRAY);
-      // //Process Frame
-      // tld.processFrame(last_gray,current_gray,pts1,pts2,pbox,status,tl,bb_file);
-      // //Draw Points
-      // if (status){
-      //   // drawPoints(frame,pts1);
-      //   // drawPoints(frame,pts2);
-      //   drawBox(frame,pbox);
-      //   detections++;
-      // }
-      //Display
-      // dst.copyTo(frame);
-      // imshow("TLD", frame);
-      //swap points and images
-    //   swap(last_gray,current_gray);
-    //   pts1.clear();
-    //   pts2.clear();
-    //   frames++;
-    // waitKey(0);
-      
-      // printf("Detection rate: %d/%d\n",detections,frames);
+      // printf("angle:%f,y:%d\n",angle,y);
+      if(!status){
+
+        DATA="left";
+        write(sock, DATA, strlen(DATA));
+      }
+
       if (cvWaitKey(33) == 'q')
         break;
     }
-    // waitKey(0);
     if (rep){
       rep = false;
       tl = false;
