@@ -524,8 +524,8 @@ if (!fromfile){
             DATA="up";
             write(sock, DATA, strlen(DATA));
           }
-            printf("RES angle=%f,y=%d,a=%d\n",angleList[0],yList[0],0);
-            printf("RES angle=%f,y=%d,a=%d\n",angleList[i-1],yList[i-1],i-1);
+            printf("\nstart angle=%f,y=%d,a=%d\n",angleList[0],yList[0],0);
+            printf("end angle=%f,y=%d,a=%d\n",angleList[i-1],yList[i-1],i-1);
           
           printf("RES angle:%f,y:%d\n",angleList[i-1]-angleList[0],yList[i-1]-yList[0]);
         i=0;
