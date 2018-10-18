@@ -479,8 +479,9 @@ if (!fromfile){
       Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
       Mat dst(frame);	// 输出图像
       medianBlur(frame, frame, 5); //中值滤波
+      // imshow("zhongzhi",frame);
       mask = gethand(frame);
-      // imshow( "gethand", mask );
+      imshow( "gethand", mask );
       // 形态学操作，去除噪声，并使手的边界更加清晰
       Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
       erode(mask, mask, element);//侵蚀
