@@ -471,8 +471,8 @@ if (!fromfile){
     int detections = 1;
     float angle;
     int y;
-    float angleList[1500];
-    int yList[1500];
+    float angleList[15000];
+    int yList[15000];
     int i=0;
   REPEAT:
     while(capture.read(frame)){
@@ -496,38 +496,32 @@ if (!fromfile){
       // printf("angle:%f,y:%d\n",angle,y);
         angleList[i] = angle;
         yList[i] = y;
-        i++;
-        // if(i==15){
-        //   i=0;
-          
-        //   // printf("RES angle:%f,y:%d\n",angleList[14]-angleList[0],yList[14]-yList[0]);
-        //  for(int a=0;a<15;a++){
-        //     // printf("RES angle=%f,y=%d,a=%d\n",angleList[a],yList[a]);
-        //   }
-        //   memset(angleList, 0, sizeof(angleList));
-        //   memset(yList, 0, sizeof(yList));
-        //   for(int a=0;a<15;a++){
-        //     // printf("RES angle=%f,y=%d,a=%d\n",angleList[a],yList[a],a);
-        //   }
-        // }
-      }else if(i>0){
-        if(angleList[i-1]-angleList[0] > 0.3){
-            DATA="left";
-            write(sock, DATA, strlen(DATA));
-          }else if(angleList[i-1]-angleList[0] < -0.3){
+        if(angleList[i]-angleList[0] > 0.4){
+            printf("right\n");
             DATA="right";
             write(sock, DATA, strlen(DATA));
-          }else if(yList[i-1]-yList[0]>10){
-            DATA="down";
+          }else if(angleList[i]-angleList[0] < -0.4){
+            DATA="left";
+            printf("left\n");
+            
             write(sock, DATA, strlen(DATA));
-          }else if(yList[i-1]-yList[0]<-10){
+          }else if(yList[i]-yList[0]>30){
+            DATA="down";
+            printf("down\n");
+            
+            write(sock, DATA, strlen(DATA));
+          }else if(yList[i]-yList[0]<-30){
             DATA="up";
+            printf("up\n");
+            
             write(sock, DATA, strlen(DATA));
           }
-            printf("\nstart angle=%f,y=%d,a=%d\n",angleList[0],yList[0],0);
-            printf("end angle=%f,y=%d,a=%d\n",angleList[i-1],yList[i-1],i-1);
-          
-          printf("RES angle:%f,y:%d\n",angleList[i-1]-angleList[0],yList[i-1]-yList[0]);
+            // printf("\nstart angle=%f,y=%d,aaaaa=%d\n",angleList[0],yList[0],0);
+            printf("end angle=%f,y=%d,aaaaaaa=%d\n",angleList[i],yList[i],i);
+            // printf("RES angle:%f,y:%d\n",angleList[i]-angleList[0],yList[i]-yList[0]);
+          i++;
+        
+      }else if(i>0){
         i=0;
         memset(angleList, 0, sizeof(angleList));
         memset(yList, 0, sizeof(yList));
