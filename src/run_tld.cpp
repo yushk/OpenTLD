@@ -398,7 +398,10 @@ int main(int argc, char * argv[]){
   const unsigned short SERVERPORT = 2001;
   const int MAXSIZE = 1024;
   const char* SERVER_IP = "192.168.8.1";
-  const char* DATA = "go";
+  char DATA[4] = "";
+  char wifisend[20];
+  char wifisenderror[20] = "A000000000000000000";
+
   VideoCapture capture;
   capture.open(0);
   FileStorage fs;
@@ -415,21 +418,21 @@ int main(int argc, char * argv[]){
 //    hostent *host;
     sockaddr_in serv_addr;
 
-    // if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    // {
-    //     cerr<<"socket create fail!"<<endl;
-    //     exit(1);
-    // }
-    // bzero( &serv_addr, sizeof(serv_addr) );
-    // serv_addr.sin_family =  AF_INET;
-    // serv_addr.sin_port = htons(SERVERPORT);
-    // serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+    if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        cerr<<"socket create fail!"<<endl;
+        exit(1);
+    }
+    bzero( &serv_addr, sizeof(serv_addr) );
+    serv_addr.sin_family =  AF_INET;
+    serv_addr.sin_port = htons(SERVERPORT);
+    serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
-    // if( connect(sock, (sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
-    // {
-    //     cerr<<"connect error"<<endl;
-    //     exit(1);
-    // }
+    if( connect(sock, (sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
+    {
+        cerr<<"connect error"<<endl;
+        exit(1);
+    }
   // const string address = "http://192.168.8.1:8083/?action=stream.mjpg";
   // if (!capture.open(address))
   // {
@@ -496,24 +499,22 @@ if (!fromfile){
       // printf("angle:%f,y:%d\n",angle,y);
         angleList[i] = angle;
         yList[i] = y;
+        DATA[0]='A';
         if(angleList[i]-angleList[0] > 0.4){
             printf("right\n");
-            DATA="right";
+            DATA[0]='R';
             write(sock, DATA, strlen(DATA));
           }else if(angleList[i]-angleList[0] < -0.4){
-            DATA="left";
+            DATA[0]='L';
             printf("left\n");
-            
             write(sock, DATA, strlen(DATA));
           }else if(yList[i]-yList[0]>30){
-            DATA="down";
+            DATA[0]='D';
             printf("down\n");
-            
             write(sock, DATA, strlen(DATA));
           }else if(yList[i]-yList[0]<-30){
-            DATA="up";
+            DATA[0]='U';
             printf("up\n");
-            
             write(sock, DATA, strlen(DATA));
           }
             // printf("\nstart angle=%f,y=%d,aaaaa=%d\n",angleList[0],yList[0],0);
@@ -523,10 +524,11 @@ if (!fromfile){
         
       }else if(i>0){
         i=0;
+        DATA[0]='D';
+        write(sock, DATA, strlen(DATA));
         memset(angleList, 0, sizeof(angleList));
         memset(yList, 0, sizeof(yList));
       }
-
       if (cvWaitKey(33) == 'q')
         break;
     }
