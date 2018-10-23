@@ -283,30 +283,7 @@ void read_options(int argc, char** argv,VideoCapture& capture,FileStorage &fs){
       }
   }
 }
-void getpic(Mat* frame){
-  // int frame_width = (int)capture.get(CV_CAP_PROP_FRAME_WIDTH);
-  // int frame_height = (int)capture.get(CV_CAP_PROP_FRAME_HEIGHT);
-  // int frame_number = capture.get(CV_CAP_PROP_FRAME_COUNT);
-  // cout << "frame_width is " << frame_width << endl;
-  // cout << "frame_height is " << frame_height << endl;
-  // cout << "frame_number is " << frame_number << endl;
-  // srand((unsigned)time(NULL)); //
-  // long frameToStart = rand() % frame_number;//
-  // // Mat frame; //
-  // char image_name[20];
-  // imshow("che", frame);//
-  // // for(int i=0;i<frame_number;i++){
-  //   capture.set(CV_CAP_PROP_POS_FRAMES, 50);//
-  //   if (!capture.read(frame))
-  //   {
-  //       cout << "error " << endl;
-  //   }
-  //   sprintf(image_name, "%s%s", "image/1",".jpg");
-  //   printf("image_name:%s\n",image_name);
-  //   imwrite(image_name, frame); //
-  // // }
-  // waitKey(0);
-}
+
 // 根据皮肤颜色分割 获取手势
 Mat gethand(Mat frame){
 	Mat srcImage ;
@@ -413,6 +390,12 @@ int main(int argc, char * argv[]){
 	cout << "capture device failed to open!" << endl;
     return 1;
   }
+  // const string address = "http://192.168.8.1:8083/?action=stream.mjpg";
+  // if (!capture.open(address))
+  // {
+	// cout << "wifi failed to open!" << endl;
+  //   return 1;
+  // }
     int sock, recvBytes;
     char buf[MAXSIZE];
 //    hostent *host;
@@ -433,12 +416,7 @@ int main(int argc, char * argv[]){
         cerr<<"connect error"<<endl;
         exit(1);
     }
-  // const string address = "http://192.168.8.1:8083/?action=stream.mjpg";
-  // if (!capture.open(address))
-  // {
-	// cout << "wifi failed to open!" << endl;
-  //   return 1;
-  // }
+  
 
   Mat frame;
   Mat frameHSV;	// hsv空间
@@ -484,7 +462,7 @@ if (!fromfile){
       medianBlur(frame, frame, 5); //中值滤波
       // imshow("zhongzhi",frame);
       mask = gethand(frame);
-      imshow( "gethand", mask );
+      // imshow( "gethand", mask );
       // 形态学操作，去除噪声，并使手的边界更加清晰
       Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
       erode(mask, mask, element);//侵蚀
