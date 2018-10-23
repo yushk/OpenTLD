@@ -30,7 +30,7 @@ This is a work in progress, as of right now the code is functional but pretty sl
 ### To test the final detector (Repeat the video, first time learns, second time detects)
     ./run_tld -p ../parameters.yml -s ../datasets/06_car/car.mpg -b ../datasets/06_car/init.txt -tl -r
 ### head test
-    ./run_tld -p ../parameters.yml -s ../datasets/11_hand/hand.png 
+    ./run_tld -p ../parameters.yml -s ../datasets/11_hand/right.mp4
     
 ---
 Evaluation

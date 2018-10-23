@@ -401,21 +401,21 @@ int main(int argc, char * argv[]){
 //    hostent *host;
     sockaddr_in serv_addr;
 
-    if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-        cerr<<"socket create fail!"<<endl;
-        exit(1);
-    }
-    bzero( &serv_addr, sizeof(serv_addr) );
-    serv_addr.sin_family =  AF_INET;
-    serv_addr.sin_port = htons(SERVERPORT);
-    serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+    // if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    // {
+    //     cerr<<"socket create fail!"<<endl;
+    //     exit(1);
+    // }
+    // bzero( &serv_addr, sizeof(serv_addr) );
+    // serv_addr.sin_family =  AF_INET;
+    // serv_addr.sin_port = htons(SERVERPORT);
+    // serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
-    if( connect(sock, (sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
-    {
-        cerr<<"connect error"<<endl;
-        exit(1);
-    }
+    // if( connect(sock, (sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
+    // {
+    //     cerr<<"connect error"<<endl;
+    //     exit(1);
+    // }
   
 
   Mat frame;
