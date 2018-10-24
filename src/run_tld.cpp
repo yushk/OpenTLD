@@ -108,7 +108,7 @@ void print_help(char** argv){
   printf("-s    source video\n-b        bounding box file\n-tl  track and learn\n-r     repeat\n");
 }
 
- Mat thresh_callback(Mat threshold_output, Mat drawing,float &angle, int &y, bool &flag ){
+ Mat thresh_callback(Mat threshold_output, Mat drawing,float &angle, int &y, bool &flag, BoundingBox& bbnext ){
  
    vector<vector<Point> > contours;
    vector<Vec4i> hierarchy;
@@ -123,7 +123,7 @@ void print_help(char** argv){
   // 寻找质心
     Moments moment = moments(threshold_output, true);  
     Point center(moment.m10/moment.m00, moment.m01/moment.m00);  
-    circle(drawing, center, 8 ,Scalar(0, 0, 255), CV_FILLED);  
+    
 
    double maxArea = 0;
    vector<Point> maxContour;
@@ -141,14 +141,10 @@ void print_help(char** argv){
        maxContour = contours[i];
      }
     }
-   /// Draw contours + hull results
-  //  Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
    for( int i = 0; i< contours.size(); i++ )
       {
         if(maxContour ==contours[i] ){
           Scalar color = Scalar( 0,0,255 );
-          // drawContours( drawing, contours, i, color, -1, 8, vector<Vec4i>(), 0, Point() );
-          //  drawContours(drawing, contours, i, Scalar(255), -1);
           drawContours( drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
           vector<Vec4i>::iterator d =defects[i].begin();
           int a=0;
@@ -174,19 +170,21 @@ void print_help(char** argv){
                   circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
                   circle( drawing, ptFar,   4, Scalar(100,0,255), 2 );
                   sprintf(image_name, "%d", a);
-                  // printf("aaaa:%d,depth:%d\n",a,depth);
                   putText(drawing,image_name,ptFar,FONT_HERSHEY_SIMPLEX,0.5,Scalar(0,0,0),1,8);
                   list[a] = ptFar;
                   listStart[a] = ptStart;
                   listEnd[a] = ptEnd;
                   a++;
-                  // printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
-                  //         ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);
                   }
               d++;
           }
-          
+          // 判断出现5指情况下
           if (a==4){
+              circle(drawing, center, 8 ,Scalar(0, 0, 255), CV_FILLED);  
+              bbnext.x = center.x-100;   // weighted average trackers trajectory with the close detections
+              bbnext.y = center.y-100;
+              bbnext.width = 200;
+              bbnext.height =200;
               flag = true;
               float dis[6];
               dis[0]= getTwoPointDistance(list[0],list[1]);
@@ -239,6 +237,8 @@ void print_help(char** argv){
               line( drawing, start, end, CV_RGB(0,0,0), 2 );
           }else{
             flag = false;
+            bbnext.width = 0;
+            bbnext.height =0;
           }
           break;
         }
@@ -331,8 +331,7 @@ Mat gethand(Mat frame){
   return result;
 }
 
-void client()
-{
+void client() {
     const unsigned short SERVERPORT = 2001;
     const int MAXSIZE = 1024;
     const char* SERVER_IP = "192.168.8.1";
@@ -340,7 +339,7 @@ void client()
 
     int sock, recvBytes;
     char buf[MAXSIZE];
-//    hostent *host;
+    //    hostent *host;
     sockaddr_in serv_addr;
 
     if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -390,17 +389,19 @@ int main(int argc, char * argv[]){
 	cout << "capture device failed to open!" << endl;
     return 1;
   }
+  // 通过wifi 获取小车摄像头视频数据
+
   // const string address = "http://192.168.8.1:8083/?action=stream.mjpg";
   // if (!capture.open(address))
   // {
 	// cout << "wifi failed to open!" << endl;
   //   return 1;
   // }
+
     int sock, recvBytes;
     char buf[MAXSIZE];
-//    hostent *host;
     sockaddr_in serv_addr;
-
+  // 与小车通信，与路由简历socket 链接 
     // if( (sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     // {
     //     cerr<<"socket create fail!"<<endl;
@@ -470,11 +471,10 @@ if (!fromfile){
       dilate(mask, mask, element);//膨胀
       morphologyEx(mask, mask, MORPH_CLOSE, element);
       medianBlur(mask, mask, 5); //中值滤波
-     
-      dst = thresh_callback(mask, frame, angle, y ,status); // 寻找手势轮廓
+      dst = thresh_callback(mask, frame, angle, y ,status, pbox); // 寻找手势轮廓
+      drawBox(dst,pbox);
       imshow( "Hull demo", dst );
       if(status){
-      // printf("angle:%f,y:%d\n",angle,y);
         angleList[i] = angle;
         yList[i] = y;
         DATA[0]='A';
