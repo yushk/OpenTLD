@@ -107,6 +107,76 @@ void print_help(char** argv){
   printf("use:\n     %s -p /path/parameters.yml\n",argv[0]);
   printf("-s    source video\n-b        bounding box file\n-tl  track and learn\n-r     repeat\n");
 }
+ void  analyseStatic(Mat &threshold_output, Mat &drawing, int &type, BoundingBox& bbnext ){
+   vector<vector<Point> > contours;
+   vector<Vec4i> hierarchy;
+  /// Find contours
+   findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+   /// Find the convex hull object for each contour
+   vector<vector<Point> >hull( contours.size() );
+   // Int type hull
+   vector<vector<int> > hullsI( contours.size() );
+   // Convexity defects
+   vector<vector<Vec4i> > defects( contours.size() );
+  // 寻找质心
+    Moments moment = moments(threshold_output, true);  
+    Point center(moment.m10/moment.m00, moment.m01/moment.m00); 
+      double maxArea = 0;
+   vector<Point> maxContour;
+   for( int i = 0; i < contours.size(); i++ ) {  
+      convexHull( Mat(contours[i]), hull[i], false ); 
+      // find int type hull
+      convexHull( Mat(contours[i]), hullsI[i], false ); 
+	    // get convexity defects
+      if(hullsI[i].size() > 3 )
+	    convexityDefects(Mat(contours[i]),hullsI[i], defects[i]);
+
+     double area = contourArea(contours[i]);
+     if (area > maxArea){
+       maxArea = area;
+       maxContour = contours[i];
+     }
+    }
+     for( int i = 0; i< contours.size(); i++ )
+      {
+        if(maxContour ==contours[i] ){
+          Scalar color = Scalar( 0,0,255 );
+          drawContours( drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
+          vector<Vec4i>::iterator d =defects[i].begin();
+          int a=0;
+          Point listStart[4];
+          Point listEnd[4];
+          Point list[4];
+          while( d!=defects[i].end() ) {
+                  Vec4i& v=(*d);
+                  int startidx=v[0]; 
+                  Point ptStart( contours[i][startidx] ); // point of the contour where the defect begins
+                  int endidx=v[1]; 
+                  Point ptEnd( contours[i][endidx] ); // point of the contour where the defect ends
+                  int faridx=v[2]; 
+                  Point ptFar( contours[i][faridx] );// the farthest from the convex hull point within the defect
+                  int depth = v[3] / 256; // distance between the farthest point and the convex hull
+                  char image_name[20];
+                  if(depth > 30 && depth < 120)
+                  {
+                 
+                  line( drawing, ptStart, ptFar, CV_RGB(0,255,0), 2 );
+                  line( drawing, ptEnd, ptFar, CV_RGB(0,255,0), 2 );
+                  circle( drawing, ptStart,   4, Scalar(0,0,0), 2 );
+                  circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
+                  circle( drawing, ptFar,   4, Scalar(100,0,255), 2 );
+                  sprintf(image_name, "%d", a);
+                  putText(drawing,image_name,ptFar,FONT_HERSHEY_SIMPLEX,0.5,Scalar(0,0,0),1,8);
+                  list[a] = ptFar;
+                  listStart[a] = ptStart;
+                  listEnd[a] = ptEnd;
+                  a++;
+                  }
+              d++;
+          }
+        }
+      }
+}
 
  Mat thresh_callback(Mat threshold_output, Mat drawing,float &angle, int &y, bool &flag, BoundingBox& bbnext ){
  
@@ -431,15 +501,24 @@ int main(int argc, char * argv[]){
       capture.set(CV_CAP_PROP_FRAME_WIDTH,340);
       capture.set(CV_CAP_PROP_FRAME_HEIGHT,240);
   }
-     
-
   
-if (!fromfile){
-        capture >> frame;
-      } else{
-      first.copyTo(frame);
-      }
-    printf("Initial Bounding Box = x:%d y:%d h:%d w:%d\n",box.x,box.y,box.width,box.height);
+  Mat staticpic (frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
+  Mat outPut(frame);	// 输出图像
+  BoundingBox box;
+  
+  int type=0;
+  medianBlur(frame, frame, 5); //中值滤波
+  staticpic = gethand(frame);
+  Mat staticelement = getStructuringElement(MORPH_RECT, Size(3,3));
+  erode(staticpic, staticpic, staticelement);//侵蚀
+  morphologyEx(staticpic, staticpic, MORPH_OPEN, staticelement);
+  dilate(staticpic, staticpic, staticelement);//膨胀
+  morphologyEx(staticpic, staticpic, MORPH_CLOSE, staticelement);
+  medianBlur(staticpic, staticpic, 5); //中值滤波
+  analyseStatic(staticpic,outPut,type,box);
+  imshow("outPut", outPut);//显示
+  waitKey(0);
+  
     //Output file
     FILE  *bb_file = fopen("bounding_boxes.txt","w");
 
@@ -458,6 +537,8 @@ if (!fromfile){
     int i=0;
   REPEAT:
     while(capture.read(frame)){
+      printf("startstartstartstart \n");
+      
       Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
       Mat dst(frame);	// 输出图像
       medianBlur(frame, frame, 5); //中值滤波
@@ -474,6 +555,7 @@ if (!fromfile){
       dst = thresh_callback(mask, frame, angle, y ,status, pbox); // 寻找手势轮廓
       drawBox(dst,pbox);
       imshow( "Hull demo", dst );
+      
       if(status){
         angleList[i] = angle;
         yList[i] = y;
@@ -510,6 +592,8 @@ if (!fromfile){
       if (cvWaitKey(33) == 'q')
         break;
     }
+    printf("endendendend \n");
+    
     if (rep){
       rep = false;
       tl = false;
