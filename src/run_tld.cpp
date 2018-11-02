@@ -124,6 +124,8 @@ void print_help(char** argv){
   // 寻找质心
     Moments moment = moments(threshold_output, true);  
     Point center(moment.m10/moment.m00, moment.m01/moment.m00); 
+  circle( drawing, center,   4, Scalar(100,0,255), 2 );
+    
       double maxArea = 0;
    vector<Point> maxContour;
    for( int i = 0; i < contours.size(); i++ ) {  
@@ -160,9 +162,8 @@ void print_help(char** argv){
                   Point ptFar( contours[i][faridx] );// the farthest from the convex hull point within the defect
                   int depth = v[3] / 256; // distance between the farthest point and the convex hull
                   char image_name[20];
-                  if(depth > 30 && depth < 120)
+                  if(depth > 50 && depth < 120)
                   {
-                 
                   line( drawing, ptStart, ptFar, CV_RGB(0,255,0), 2 );
                   line( drawing, ptEnd, ptFar, CV_RGB(0,255,0), 2 );
                   circle( drawing, ptStart,   4, Scalar(0,0,0), 2 );
@@ -177,6 +178,28 @@ void print_help(char** argv){
                   }
               d++;
           }
+          char image_name[20];
+          
+          Point location;
+          location.x=50;
+          location.y=50;
+          switch(a){
+            case 1:
+              sprintf(image_name, "%d", a+1);
+              putText(drawing,image_name,location,FONT_HERSHEY_SIMPLEX,0.5,Scalar(0,0,0),1,8);
+              break;
+            case 2:
+              sprintf(image_name, "%d", a+1);
+              putText(drawing,image_name,location,FONT_HERSHEY_SIMPLEX,0.5,Scalar(0,0,0),1,8);
+              break ;
+            case 3:
+              sprintf(image_name, "%d", a+1);
+              putText(drawing,image_name,location,FONT_HERSHEY_SIMPLEX,0.5,Scalar(0,0,0),1,8);
+              break;
+            default:
+              break;
+          }
+          printf("aaaaaa:%d\n",a);
         }
       }
 }
