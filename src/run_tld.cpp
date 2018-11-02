@@ -3,6 +3,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <stdlib.h>
 #include "tld_utils.h"
+#include "templateMatching.h"
 #include <iostream>
 #include <sstream>
 #include <TLD.h>
@@ -28,6 +29,8 @@ bool tl = false;
 bool rep = false;
 bool fromfile=false;
 string video;
+
+
 
 void readBB(char* file){
   ifstream bb_file (file);
@@ -439,6 +442,8 @@ void client() {
     cout<<buf<<endl;
     close(sock);
 }
+int match_number = 0;
+int g_nGaussianBlurValue = 4; //高斯滤波内核值
 
 int main(int argc, char * argv[]){
   const unsigned short SERVERPORT = 2001;
@@ -489,7 +494,7 @@ int main(int argc, char * argv[]){
     // }
   
 
-  Mat frame;
+  Mat frame,result1;
   Mat frameHSV;	// hsv空间
   Mat last_gray;
   Mat first;
@@ -506,19 +511,18 @@ int main(int argc, char * argv[]){
   Mat outPut(frame);	// 输出图像
   BoundingBox box;
   
-  int type=0;
-  medianBlur(frame, frame, 5); //中值滤波
-  staticpic = gethand(frame);
-  Mat staticelement = getStructuringElement(MORPH_RECT, Size(3,3));
-  erode(staticpic, staticpic, staticelement);//侵蚀
-  morphologyEx(staticpic, staticpic, MORPH_OPEN, staticelement);
-  dilate(staticpic, staticpic, staticelement);//膨胀
-  morphologyEx(staticpic, staticpic, MORPH_CLOSE, staticelement);
-  medianBlur(staticpic, staticpic, 5); //中值滤波
-  analyseStatic(staticpic,outPut,type,box);
-  imshow("outPut", outPut);//显示
-  waitKey(0);
-  
+  // int type=0;
+  // medianBlur(frame, frame, 5); //中值滤波
+  // staticpic = gethand(frame);
+  // Mat staticelement = getStructuringElement(MORPH_RECT, Size(3,3));
+  // erode(staticpic, staticpic, staticelement);//侵蚀
+  // morphologyEx(staticpic, staticpic, MORPH_OPEN, staticelement);
+  // dilate(staticpic, staticpic, staticelement);//膨胀
+  // morphologyEx(staticpic, staticpic, MORPH_CLOSE, staticelement);
+  // medianBlur(staticpic, staticpic, 5); //中值滤波
+  // analyseStatic(staticpic,outPut,type,box);
+  // imshow("outPut", outPut);//显示
+	  init_hand_template();// 载入模板的轮廓
     //Output file
     FILE  *bb_file = fopen("bounding_boxes.txt","w");
 
@@ -541,6 +545,7 @@ int main(int argc, char * argv[]){
       
       Mat mask(frame.rows, frame.cols, CV_8UC1);	// 2值掩膜
       Mat dst(frame);	// 输出图像
+      frame.copyTo(dst);
       medianBlur(frame, frame, 5); //中值滤波
       // imshow("zhongzhi",frame);
       mask = gethand(frame);
@@ -552,9 +557,39 @@ int main(int argc, char * argv[]){
       dilate(mask, mask, element);//膨胀
       morphologyEx(mask, mask, MORPH_CLOSE, element);
       medianBlur(mask, mask, 5); //中值滤波
-      dst = thresh_callback(mask, frame, angle, y ,status, pbox); // 寻找手势轮廓
-      drawBox(dst,pbox);
-      imshow( "Hull demo", dst );
+      thresh_callback(mask, frame, angle, y ,status, pbox); // 寻找手势轮廓
+      // imshow( "dst demo", dst );
+      // drawBox(dst,pbox);
+      GaussianBlur(frame, frame, Size(g_nGaussianBlurValue * 2 + 1, g_nGaussianBlurValue * 2 + 1), 0);
+      //基于椭圆皮肤模型的皮肤检测
+      result1 = ellipse_detect(frame);
+      cvtColor(result1, result1, CV_BGR2GRAY);
+      threshold(result1, result1, 50, 255, THRESH_BINARY);
+      //imshow("效果图-椭圆皮肤模型", result1);
+
+      hand_contours(result1); // 对肤色分割、滤波去噪、开运算后图像进行轮廓提取并过滤  
+      hand_template_match(match_number); //将目标轮廓与模板轮廓进行匹配
+      number_draw(dst, match_number);
+      printf("match_number:%d\n",match_number);
+      switch(match_number){
+        case 2:
+          printf("right\n");
+          DATA[0]='R';
+          write(sock, DATA, strlen(DATA));
+          break;
+        case 3:
+          DATA[0]='L';
+          printf("left\n");
+          write(sock, DATA, strlen(DATA));
+          break;
+        case 4:
+          DATA[0]='U';
+          printf("up\n");
+          write(sock, DATA, strlen(DATA));
+        break;
+      }
+      imshow("dst",frame);
+      match_number = 0;
       
       if(status){
         angleList[i] = angle;
@@ -589,6 +624,7 @@ int main(int argc, char * argv[]){
         memset(angleList, 0, sizeof(angleList));
         memset(yList, 0, sizeof(yList));
       }
+      
       if (cvWaitKey(33) == 'q')
         break;
     }
